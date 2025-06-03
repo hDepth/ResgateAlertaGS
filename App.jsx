@@ -19,6 +19,7 @@ import AlertDetailsScreen from './src/screens/alert-details';
 import ProfileScreen from './src/screens/profile';
 import AreasOfInterestScreen from './src/screens/areas-of-interest';
 import AddEditAreaScreen from './src/screens/AddEditAreaScreen';
+import LocationPickerScreen from './src/screens/LocationPickerScreen';
 import LogoutScreenPlaceholder from './src/screens/LogoutScreenPlaceholder';
 
 const AuthStack = createStackNavigator();
@@ -41,6 +42,8 @@ function AreasStackNavigator() {
     <AreasStack.Navigator screenOptions={{ headerShown: false }}>
       <AreasStack.Screen name="AreasOfInterestScreen" component={AreasOfInterestScreen} />
       <AreasStack.Screen name="AddEditAreaScreen" component={AddEditAreaScreen} />
+      {/* Remove LocationPickerScreen daqui, ela será adicionada ao RootStack */}
+      {/* <AreasStack.Screen name="LocationPickerScreen" component={LocationPickerScreen} /> */}
     </AreasStack.Navigator>
   );
 }
@@ -163,6 +166,8 @@ export default function App() {
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="Auth" component={AuthNavigator} />
         <RootStack.Screen name="App" component={AppNavigator} />
+        {/* Adiciona LocationPickerScreen diretamente ao RootStack */}
+        <RootStack.Screen name="LocationPickerScreen" component={LocationPickerScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

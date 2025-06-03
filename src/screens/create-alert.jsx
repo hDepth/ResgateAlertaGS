@@ -1,50 +1,80 @@
-// src/screens/CreateAlertScreen.jsx
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Picker } from '@react-native-picker/picker'; // Você precisará instalar esta lib: npx expo install @react-native-picker/picker
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Alert, Platform, StyleSheet } from 'react-native'; // Adicione StyleSheet
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker';
 import { MaterialIcons } from '@expo/vector-icons';
-import styles from '../styles/create-alert';
+import MapView, { Marker } from 'react-native-maps'; // Importar MapView e Marker
+
+// Importe suas constantes de tema (certifique-se de que o caminho está correto)
+import { COLORS, FONT_SIZES, SPACING } from '../constants/Theme';
+
+// Importe seus componentes personalizados (certifique-se de que os caminhos estão corretos)
 import StyledInput from '../components/StyledInput';
 import StyledButton from '../components/StyledButton';
-import { COLORS, FONT_SIZES, SPACING } from '../constants/Theme';
+import styles from '../styles/create-alert';
 
 export default function CreateAlertScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+
   const [alertType, setAlertType] = useState('');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState(''); // Representa a localização selecionada
+  const [locationText, setLocationText] = useState(''); // Estado para o texto da localização
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null); // Estado para as coordenadas do mapa
   const [severity, setSeverity] = useState('');
 
+  // Efeito para receber a localização selecionada do LocationPickerScreen
+  useEffect(() => {
+    if (route.params?.selectedLocation) {
+      const { latitude, longitude } = route.params.selectedLocation;
+      const formattedLocation = `Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`;
+      
+      setLocationText(formattedLocation); // Atualiza o texto para exibição
+      setSelectedCoordinates({ latitude, longitude }); // Atualiza as coordenadas para o mapa
+
+      // Limpa o parâmetro para evitar que seja processado novamente se a tela for focada
+      // sem uma nova seleção de localização.
+      navigation.setParams({ selectedLocation: undefined });
+    }
+  }, [route.params?.selectedLocation, navigation]); // navigation adicionado como dependência
+
   const handleSubmit = () => {
-    if (!alertType || !description || !location || !severity) {
+    // Validação dos campos
+    if (!alertType || !description || !selectedCoordinates || !severity) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos para reportar o alerta.');
       return;
     }
-    // Lógica para enviar o alerta (API, etc.)
-    console.log('Alerta a ser enviado:', { alertType, description, location, severity });
+
+    // Lógica para enviar o alerta (aqui você enviaria para sua API/backend)
+    console.log('Alerta a ser enviado:', { 
+      alertType, 
+      description, 
+      location: selectedCoordinates, // Envie o objeto de coordenadas
+      severity 
+    });
+
     Alert.alert(
       'Alerta Reportado',
       'Seu alerta foi enviado com sucesso e está sendo analisado.'
     );
-    // Limpar formulário
+
+    // Limpa os campos após o envio
     setAlertType('');
     setDescription('');
-    setLocation('');
+    setLocationText('');
+    setSelectedCoordinates(null);
     setSeverity('');
-    // Opcional: Navegar de volta ou para uma tela de confirmação
-    navigation.goBack();
+    // Opcional: Voltar para a tela inicial ou outra tela após o envio bem-sucedido
+    // navigation.goBack(); 
   };
 
   const handleSelectLocation = () => {
-    // Ação para abrir um mapa ou serviço de localização
-    Alert.alert('Funcionalidade', 'Aqui você integraria a seleção de localização via mapa (ex: react-native-maps)!');
-    // Mock de localização para demonstração
-    setLocation('Latitude: -23.5505, Longitude: -46.6333 (São Paulo)');
+    // Navega para LocationPickerScreen, passando o nome da tela atual para retorno
+    navigation.navigate('LocationPickerScreen', { returnTo: 'CreateAlert' });
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Reportar Novo Alerta</Text>
 
       <Text style={styles.label}>Tipo de Evento:</Text>
@@ -52,7 +82,7 @@ export default function CreateAlertScreen() {
         <Picker
           selectedValue={alertType}
           onValueChange={(itemValue) => setAlertType(itemValue)}
-          style={{ height: 50, width: '100%', color: COLORS.darkText }}
+          style={styles.picker}
           itemStyle={Platform.OS === 'ios' ? { fontSize: FONT_SIZES.medium } : {}}
         >
           <Picker.Item label="Selecione o tipo..." value="" />
@@ -76,10 +106,23 @@ export default function CreateAlertScreen() {
       />
 
       <Text style={styles.label}>Localização:</Text>
-      {location ? (
+      {selectedCoordinates ? (
         <View style={styles.mapPreview}>
+          <MapView
+            style={styles.smallMap} // Estilo para o mapa pequeno de preview
+            region={{
+              latitude: selectedCoordinates.latitude,
+              longitude: selectedCoordinates.longitude,
+              latitudeDelta: 0.005, // Zoom para ver a localização específica
+              longitudeDelta: 0.005,
+            }}
+            scrollEnabled={false} // Desabilita scroll
+            zoomEnabled={false} // Desabilita zoom
+          >
+            <Marker coordinate={selectedCoordinates} />
+          </MapView>
           <Text style={styles.mapPreviewText}>Localização Definida:</Text>
-          <Text style={styles.mapPreviewText}>{location}</Text>
+          <Text style={styles.mapPreviewText}>{locationText}</Text>
           <MaterialIcons name="check-circle" size={FONT_SIZES.xxLarge} color={COLORS.success} />
         </View>
       ) : (
@@ -100,7 +143,7 @@ export default function CreateAlertScreen() {
         <Picker
           selectedValue={severity}
           onValueChange={(itemValue) => setSeverity(itemValue)}
-          style={{ height: 50, width: '100%', color: COLORS.darkText }}
+          style={styles.picker}
           itemStyle={Platform.OS === 'ios' ? { fontSize: FONT_SIZES.medium } : {}}
         >
           <Picker.Item label="Selecione a severidade..." value="" />
