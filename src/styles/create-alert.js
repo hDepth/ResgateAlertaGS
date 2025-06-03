@@ -1,4 +1,4 @@
-// src/styles/CreateAlert.style.js
+// src/styles/create-alert.js
 import { StyleSheet } from 'react-native';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../constants/Theme';
 

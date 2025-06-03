@@ -1,5 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { COLORS, FONT_SIZES, SPACING } from '../constants/Theme';
+
+const { height } = Dimensions.get('window');
 
 export default StyleSheet.create({
   container: {
@@ -20,5 +22,11 @@ export default StyleSheet.create({
     padding: SPACING.small,
     fontSize: FONT_SIZES.medium,
     marginBottom: SPACING.medium,
+  },
+  map: {
+    width: '100%',
+    height: height * 0.35,
+    marginBottom: SPACING.medium,
+    borderRadius: 10,
   },
 });
