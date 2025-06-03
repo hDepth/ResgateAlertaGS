@@ -37,9 +37,9 @@ export default function HomeScreen() {
         case 'local-fire-department': return 'local-fire-department';
         case 'landslide': return 'landslide';
         case 'thunderstorm': return 'thunderstorm';
-        case 'power-off': return 'power-off'; // Ajuste o ícone se necessário
-        case 'wind-power': return 'wind-power'; // Ajuste o ícone se necessário
-        default: return 'warning'; // Ícone padrão
+        case 'power-off': return 'power-off';
+        case 'wind-power': return 'wind-power';
+        default: return 'warning'; 
       }
     };
 

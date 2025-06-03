@@ -5,7 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Pressable, StyleSheet } from 'react-native';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons'; // Adicionado MaterialCommunityIcons
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Importe suas constantes de tema
 import { COLORS, FONT_SIZES, SPACING } from './src/constants/Theme';
@@ -18,17 +18,15 @@ import CreateAlertScreen from './src/screens/create-alert';
 import AlertDetailsScreen from './src/screens/alert-details';
 import ProfileScreen from './src/screens/profile';
 import AreasOfInterestScreen from './src/screens/areas-of-interest';
+import AddEditAreaScreen from './src/screens/AddEditAreaScreen';
 import LogoutScreenPlaceholder from './src/screens/LogoutScreenPlaceholder';
 
-// --- CRIAÇÃO DAS INSTÂNCIAS DOS NAVEGADORES ---
 const AuthStack = createStackNavigator();
 const AppTabs = createBottomTabNavigator();
 const AppDrawer = createDrawerNavigator();
 const RootStack = createStackNavigator();
+const AreasStack = createStackNavigator();
 
-// ------------------------------------------
-// Navegador de Autenticação (Stack)
-// ------------------------------------------
 function AuthNavigator() {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -38,14 +36,20 @@ function AuthNavigator() {
   );
 }
 
-// ------------------------------------------
-// Navegador de Tabs (Sua Navbar Interativa)
-// ------------------------------------------
+function AreasStackNavigator() {
+  return (
+    <AreasStack.Navigator screenOptions={{ headerShown: false }}>
+      <AreasStack.Screen name="AreasOfInterestScreen" component={AreasOfInterestScreen} />
+      <AreasStack.Screen name="AddEditAreaScreen" component={AddEditAreaScreen} />
+    </AreasStack.Navigator>
+  );
+}
+
 function MainTabsNavigator() {
   return (
     <AppTabs.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false, // O Drawer ou Stack pai vai gerenciar o header
+        headerShown: false,
         tabBarIcon: ({ color, size }) => {
           let iconName;
           switch (route.name) {
@@ -59,17 +63,17 @@ function MainTabsNavigator() {
               iconName = 'person';
               break;
             case 'AreasOfInterest':
-              iconName = 'map-marker'; // Use map-marker para áreas de interesse
+              iconName = 'map';
               break;
             default:
               iconName = 'help';
           }
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: COLORS.primary, // Cor do ícone/label ativo
-        tabBarInactiveTintColor: COLORS.lightText, // Cor do ícone/label inativo
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.lightText,
         tabBarStyle: {
-          backgroundColor: COLORS.white, // Cor de fundo da Navbar
+          backgroundColor: COLORS.white,
           height: 60,
           paddingBottom: SPACING.small,
           borderTopWidth: 1,
@@ -83,23 +87,20 @@ function MainTabsNavigator() {
       <AppTabs.Screen name="Home" component={HomeScreen} options={{ title: 'Início' }} />
       <AppTabs.Screen name="CreateAlert" component={CreateAlertScreen} options={{ title: 'Reportar' }} />
       <AppTabs.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
-      <AppTabs.Screen name="AreasOfInterest" component={AreasOfInterestScreen} options={{ title: 'Locais' }} />
+      <AppTabs.Screen name="AreasOfInterest" component={AreasStackNavigator} options={{ title: 'Locais' }} />
     </AppTabs.Navigator>
   );
 }
 
-// ------------------------------------------
-// Navegador Drawer (Menu Lateral)
-// ------------------------------------------
 function AppNavigator() {
   return (
     <AppDrawer.Navigator
       screenOptions={({ navigation }) => ({
         headerShown: true,
         headerStyle: {
-          backgroundColor: COLORS.primary, // Cor de fundo do cabeçalho
+          backgroundColor: COLORS.primary,
         },
-        headerTintColor: COLORS.inverseText, // Cor do texto e ícones no cabeçalho
+        headerTintColor: COLORS.inverseText,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontSize: FONT_SIZES.large,
@@ -115,11 +116,10 @@ function AppNavigator() {
           fontSize: FONT_SIZES.medium,
         },
         drawerStyle: {
-          backgroundColor: COLORS.lightBackground, // Cor de fundo do Drawer
+          backgroundColor: COLORS.lightBackground,
         },
       })}
     >
-      {/* A tela principal do Drawer será o seu MainTabsNavigator */}
       <AppDrawer.Screen
         name="MainTabs"
         component={MainTabsNavigator}
@@ -157,9 +157,6 @@ function AppNavigator() {
   );
 }
 
-// ------------------------------------------
-// Navegador Raiz (RootStack) - ponto de entrada do aplicativo
-// ------------------------------------------
 export default function App() {
   return (
     <NavigationContainer>

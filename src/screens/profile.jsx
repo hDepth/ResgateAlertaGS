@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import styles from '../styles/profile';
 import StyledButton from '../components/StyledButton';
-import { COLORS } from '../constants/Theme';
+import { COLORS, SPACING } from '../constants/Theme';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();

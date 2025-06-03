@@ -1,11 +1,11 @@
-// src/screens/AreasOfInterestScreen.jsx
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react'; // Adicione useCallback
+import { View, Text, ScrollView, Alert, FlatList } from 'react-native'; // Mude para FlatList
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import styles from '../styles/areas-of-interest';
 import StyledButton from '../components/StyledButton';
 import { COLORS, FONT_SIZES, SPACING } from '../constants/Theme';
+import AreaCard from '../components/AreaCard'; // Importe o novo componente
 
 export default function AreasOfInterestScreen() {
   const navigation = useNavigation();
@@ -15,7 +15,7 @@ export default function AreasOfInterestScreen() {
     { id: '3', name: 'Escola Filhos', coordinates: 'Lat: -23.321, Long: -46.765', active: true },
   ]);
 
-  const handleDeleteArea = (id) => {
+  const handleDeleteArea = useCallback((id) => { // Envolva com useCallback
     Alert.alert(
       'Confirmar Exclusão',
       'Tem certeza que deseja remover esta área de interesse?',
@@ -24,63 +24,74 @@ export default function AreasOfInterestScreen() {
         {
           text: 'Excluir',
           onPress: () => {
-            setAreas(areas.filter(area => area.id !== id));
+            // Aqui você chamaria sua API para deletar
+            setAreas(prevAreas => prevAreas.filter(area => area.id !== id));
             Alert.alert('Sucesso', 'Área removida com sucesso!');
           },
           style: 'destructive',
         },
       ]
     );
-  };
+  }, []); // Adicione dependências se `areas` ou `setAreas` fossem de um contexto/prop
 
-  const handleAddArea = () => {
-    Alert.alert(
-      'Adicionar Área',
-      'Aqui você implementaria a funcionalidade de adicionar uma nova área de interesse, talvez usando um mapa para seleção ou formulário.'
+  const handleToggleActive = useCallback((id, newActiveState) => { // Envolva com useCallback
+    // Aqui você chamaria sua API para atualizar o status
+    setAreas(prevAreas =>
+      prevAreas.map(area =>
+        area.id === id ? { ...area, active: newActiveState } : area
+      )
     );
-    // Mock de adição para demonstração
-    const newId = String(areas.length + 1);
-    setAreas([...areas, { id: newId, name: `Nova Área ${newId}`, coordinates: `Lat: Mock, Long: Mock`, active: true }]);
+    // Poderia adicionar um feedback visual/toast aqui
+  }, []);
+
+  const handleEditArea = useCallback((area) => { // Envolva com useCallback
+    // Navegar para uma nova tela de edição, passando os dados da área
+    navigation.navigate('AddEditAreaScreen', { areaToEdit: area });
+    console.log('Editando área:', area);
+  }, [navigation]);
+
+  const handleNavigateToAddArea = () => {
+    // Navegar para uma nova tela de adição
+    navigation.navigate('AddEditAreaScreen'); // Sem parâmetros para modo de adição
   };
 
-  const renderAreaItem = (item) => (
-    <View key={item.id} style={styles.areaCard}>
-      <View style={styles.areaTextContainer}>
-        <Text style={styles.areaName}>{item.name}</Text>
-        <Text style={styles.areaCoordinates}>{item.coordinates}</Text>
-      </View>
-      <StyledButton
-        title="Excluir"
-        onPress={() => handleDeleteArea(item.id)}
-        color={COLORS.danger}
-        style={styles.deleteButton}
-      />
-    </View>
+  const renderAreaItem = ({ item }) => ( // Ajuste para FlatList
+    <AreaCard
+      area={item}
+      onDelete={handleDeleteArea}
+      onToggleActive={handleToggleActive}
+      onEdit={handleEditArea}
+    />
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}> {/* Use View para FlatList ocupar a tela */}
       <Text style={styles.title}>Minhas Áreas de Interesse</Text>
       <Text style={styles.subtitle}>
         Receba alertas personalizados para locais que são importantes para você.
       </Text>
 
       {areas.length > 0 ? (
-        areas.map(renderAreaItem)
+        <FlatList
+          data={areas}
+          renderItem={renderAreaItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContentContainer} // Para padding na lista
+        />
       ) : (
         <View style={styles.noAreasContainer}>
           <MaterialIcons name="location-off" size={FONT_SIZES.xxLarge * 2} color={COLORS.lightText} />
-          <Text style={styles.noAreasText}>Nenhuma área de interesse configurada ainda. Adicione uma para começar a receber alertas personalizados!</Text>
+          <Text style={styles.noAreasText}>Nenhuma área de interesse configurada ainda. Adicione uma para começar a receber alertas!</Text>
         </View>
       )}
 
       <View style={styles.addAreaButtonContainer}>
         <StyledButton
           title="Adicionar Nova Área"
-          onPress={handleAddArea}
+          onPress={handleNavigateToAddArea} // Mude para navegação
           color={COLORS.primary}
         />
       </View>
-    </ScrollView>
+    </View>
   );
 }
