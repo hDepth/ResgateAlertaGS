@@ -1,24 +1,65 @@
+// src/styles/CreateAlert.style.js
 import { StyleSheet } from 'react-native';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../constants/Theme';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fce4ec',
+    backgroundColor: COLORS.lightBackground,
+    padding: SPACING.large,
   },
   title: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.xxLarge,
     fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#c2185b',
-  },
-  text: {
-    fontSize: 16,
+    color: COLORS.darkText,
+    marginBottom: SPACING.large,
     textAlign: 'center',
-    marginBottom: 20,
-    color: '#880e4f',
+  },
+  label: {
+    fontSize: FONT_SIZES.medium,
+    color: COLORS.darkText,
+    marginBottom: SPACING.small,
+    fontWeight: 'bold',
+  },
+  input: {
+    marginBottom: SPACING.medium,
+    backgroundColor: COLORS.white,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top', // Para Android
+    paddingTop: SPACING.medium,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    borderRadius: BORDER_RADIUS.medium,
+    marginBottom: SPACING.medium,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.small,
+  },
+  buttonContainer: {
+    marginTop: SPACING.large,
+    width: '100%',
+  },
+  locationButton: {
+    backgroundColor: COLORS.accent,
+    marginBottom: SPACING.medium,
+  },
+  submitButton: {
+    backgroundColor: COLORS.primary,
+  },
+  mapPreview: {
+    height: 150,
+    backgroundColor: COLORS.borderColor,
+    borderRadius: BORDER_RADIUS.medium,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.medium,
+  },
+  mapPreviewText: {
+    color: COLORS.lightText,
+    fontSize: FONT_SIZES.medium,
   },
 });
 

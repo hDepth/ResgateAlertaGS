@@ -1,11 +1,14 @@
-import 'react-native-gesture-handler'; // IMPORTANTE: deve ser a primeira linha!
+import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Pressable } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Pressable, StyleSheet } from 'react-native';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons'; // Adicionado MaterialCommunityIcons
+
+// Importe suas constantes de tema
+import { COLORS, FONT_SIZES, SPACING } from './src/constants/Theme';
 
 // Importe todas as suas telas de src/screens
 import LoginScreen from './src/screens/login';
@@ -17,7 +20,7 @@ import ProfileScreen from './src/screens/profile';
 import AreasOfInterestScreen from './src/screens/areas-of-interest';
 import LogoutScreenPlaceholder from './src/screens/LogoutScreenPlaceholder';
 
-// --- CRIAÇÃO DAS INSTÂNCIAS DOS NAVEGADORES (sem tipagens explícitas) ---
+// --- CRIAÇÃO DAS INSTÂNCIAS DOS NAVEGADORES ---
 const AuthStack = createStackNavigator();
 const AppTabs = createBottomTabNavigator();
 const AppDrawer = createDrawerNavigator();
@@ -45,28 +48,35 @@ function MainTabsNavigator() {
         headerShown: false, // O Drawer ou Stack pai vai gerenciar o header
         tabBarIcon: ({ color, size }) => {
           let iconName;
-          if (route.name === 'Home') {
-            iconName = 'home';
-          } else if (route.name === 'CreateAlert') {
-            iconName = 'add-alert';
-          } else if (route.name === 'Profile') {
-            iconName = 'person';
-          } else if (route.name === 'AreasOfInterest') {
-            iconName = 'location-on';
-          } else {
-            iconName = 'help'; // Ícone padrão
+          switch (route.name) {
+            case 'Home':
+              iconName = 'home';
+              break;
+            case 'CreateAlert':
+              iconName = 'add-alert';
+              break;
+            case 'Profile':
+              iconName = 'person';
+              break;
+            case 'AreasOfInterest':
+              iconName = 'map-marker'; // Use map-marker para áreas de interesse
+              break;
+            default:
+              iconName = 'help';
           }
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#00796b', // Cor do ícone/label ativo
-        tabBarInactiveTintColor: '#4db6ac', // Cor do ícone/label inativo
+        tabBarActiveTintColor: COLORS.primary, // Cor do ícone/label ativo
+        tabBarInactiveTintColor: COLORS.lightText, // Cor do ícone/label inativo
         tabBarStyle: {
-          backgroundColor: '#e0f2f7', // Cor de fundo da Navbar
+          backgroundColor: COLORS.white, // Cor de fundo da Navbar
           height: 60,
-          paddingBottom: 5,
+          paddingBottom: SPACING.small,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.borderColor,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: FONT_SIZES.small,
         },
       })}
     >
@@ -87,27 +97,31 @@ function AppNavigator() {
       screenOptions={({ navigation }) => ({
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#2196F3', // Cor de fundo do cabeçalho
+          backgroundColor: COLORS.primary, // Cor de fundo do cabeçalho
         },
-        headerTintColor: '#fff', // Cor do texto e ícones no cabeçalho
+        headerTintColor: COLORS.inverseText, // Cor do texto e ícones no cabeçalho
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontSize: FONT_SIZES.large,
         },
         headerLeft: () => (
-          <Pressable onPress={() => navigation.toggleDrawer()} style={{ marginLeft: 15 }}>
-            <MaterialIcons name="menu" size={24} color="white" />
+          <Pressable onPress={() => navigation.toggleDrawer()} style={styles.headerLeftIcon}>
+            <MaterialIcons name="menu" size={SPACING.large} color={COLORS.inverseText} />
           </Pressable>
         ),
-        drawerActiveTintColor: '#00796b',
-        drawerInactiveTintColor: '#4db6ac',
+        drawerActiveTintColor: COLORS.primary,
+        drawerInactiveTintColor: COLORS.darkText,
         drawerLabelStyle: {
-          fontSize: 16,
+          fontSize: FONT_SIZES.medium,
+        },
+        drawerStyle: {
+          backgroundColor: COLORS.lightBackground, // Cor de fundo do Drawer
         },
       })}
     >
       {/* A tela principal do Drawer será o seu MainTabsNavigator */}
       <AppDrawer.Screen
-        name="MainTabs" // IMPORTANTE: Este nome de rota é como o Drawer acessa as Tabs
+        name="MainTabs"
         component={MainTabsNavigator}
         options={{
           drawerLabel: 'Início',
@@ -117,7 +131,6 @@ function AppNavigator() {
           ),
         }}
       />
-      {/* Telas que podem ser acessadas diretamente pelo Drawer, sem estar nas Tabs */}
       <AppDrawer.Screen
         name="AlertDetails"
         component={AlertDetailsScreen}
@@ -129,7 +142,6 @@ function AppNavigator() {
           ),
         }}
       />
-      {/* Item de Logout no Drawer */}
       <AppDrawer.Screen
         name="Logout"
         component={LogoutScreenPlaceholder}
@@ -152,11 +164,15 @@ export default function App() {
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {/* A tela Auth será a primeira, sem header */}
         <RootStack.Screen name="Auth" component={AuthNavigator} />
-        {/* A tela App (principal) será acessada após a autenticação */}
         <RootStack.Screen name="App" component={AppNavigator} />
       </RootStack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  headerLeftIcon: {
+    marginLeft: SPACING.medium,
+  },
+});
