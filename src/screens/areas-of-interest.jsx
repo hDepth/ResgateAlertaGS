@@ -1,21 +1,61 @@
-import React, { useState, useCallback } from 'react'; // Adicione useCallback
-import { View, Text, ScrollView, Alert, FlatList } from 'react-native'; // Mude para FlatList
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback, useEffect } from 'react'; // Adicione useEffect
+import { View, Text, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native'; // Adicione useFocusEffect
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importe AsyncStorage
 import styles from '../styles/areas-of-interest';
 import StyledButton from '../components/StyledButton';
 import { COLORS, FONT_SIZES, SPACING } from '../constants/Theme';
-import AreaCard from '../components/AreaCard'; // Importe o novo componente
+import AreaCard from '../components/AreaCard'; // Importe o componente AreaCard
 
 export default function AreasOfInterestScreen() {
   const navigation = useNavigation();
-  const [areas, setAreas] = useState([
-    { id: '1', name: 'Casa', coordinates: 'Lat: -23.123, Long: -46.456', active: true },
-    { id: '2', name: 'Trabalho', coordinates: 'Lat: -23.789, Long: -46.987', active: false },
-    { id: '3', name: 'Escola Filhos', coordinates: 'Lat: -23.321, Long: -46.765', active: true },
-  ]);
+  const [areas, setAreas] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleDeleteArea = useCallback((id) => { // Envolva com useCallback
+  // Função para carregar as áreas do AsyncStorage
+  const loadAreas = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const storedAreas = await AsyncStorage.getItem('user_areas_of_interest');
+      if (storedAreas) {
+        setAreas(JSON.parse(storedAreas));
+      } else {
+        setAreas([]); // Nenhuma área salva
+      }
+    } catch (e) {
+      console.error('Erro ao carregar áreas do AsyncStorage:', e);
+      setError('Não foi possível carregar suas áreas de interesse.');
+      Alert.alert('Erro', 'Não foi possível carregar suas áreas de interesse.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Use useFocusEffect para recarregar as áreas sempre que a tela estiver em foco
+  useFocusEffect(
+    useCallback(() => {
+      loadAreas();
+      return () => {
+        // Limpar estados ou listeners se necessário
+      };
+    }, [loadAreas])
+  );
+
+  // Função para salvar as áreas no AsyncStorage
+  const saveAreas = useCallback(async (newAreas) => {
+    try {
+      await AsyncStorage.setItem('user_areas_of_interest', JSON.stringify(newAreas));
+      setAreas(newAreas); // Atualiza o estado local
+    } catch (e) {
+      console.error('Erro ao salvar áreas no AsyncStorage:', e);
+      Alert.alert('Erro', 'Não foi possível salvar as alterações nas áreas de interesse.');
+    }
+  }, []);
+
+  const handleDeleteArea = useCallback((id) => {
     Alert.alert(
       'Confirmar Exclusão',
       'Tem certeza que deseja remover esta área de interesse?',
@@ -23,39 +63,35 @@ export default function AreasOfInterestScreen() {
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Excluir',
-          onPress: () => {
-            // Aqui você chamaria sua API para deletar
-            setAreas(prevAreas => prevAreas.filter(area => area.id !== id));
+          onPress: async () => {
+            const updatedAreas = areas.filter(area => area.id !== id);
+            await saveAreas(updatedAreas); // Salva no AsyncStorage
             Alert.alert('Sucesso', 'Área removida com sucesso!');
           },
           style: 'destructive',
         },
       ]
     );
-  }, []); // Adicione dependências se `areas` ou `setAreas` fossem de um contexto/prop
+  }, [areas, saveAreas]); // Adicione 'areas' como dependência
 
-  const handleToggleActive = useCallback((id, newActiveState) => { // Envolva com useCallback
-    // Aqui você chamaria sua API para atualizar o status
-    setAreas(prevAreas =>
-      prevAreas.map(area =>
-        area.id === id ? { ...area, active: newActiveState } : area
-      )
+  const handleToggleActive = useCallback(async (id, newActiveState) => {
+    const updatedAreas = areas.map(area =>
+      area.id === id ? { ...area, active: newActiveState } : area
     );
+    await saveAreas(updatedAreas); // Salva no AsyncStorage
     // Poderia adicionar um feedback visual/toast aqui
-  }, []);
+  }, [areas, saveAreas]); // Adicione 'areas' como dependência
 
-  const handleEditArea = useCallback((area) => { // Envolva com useCallback
-    // Navegar para uma nova tela de edição, passando os dados da área
+  const handleEditArea = useCallback((area) => {
     navigation.navigate('AddEditAreaScreen', { areaToEdit: area });
     console.log('Editando área:', area);
   }, [navigation]);
 
   const handleNavigateToAddArea = () => {
-    // Navegar para uma nova tela de adição
-    navigation.navigate('AddEditAreaScreen'); // Sem parâmetros para modo de adição
+    navigation.navigate('AddEditAreaScreen');
   };
 
-  const renderAreaItem = ({ item }) => ( // Ajuste para FlatList
+  const renderAreaItem = ({ item }) => (
     <AreaCard
       area={item}
       onDelete={handleDeleteArea}
@@ -64,8 +100,27 @@ export default function AreasOfInterestScreen() {
     />
   );
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Carregando áreas...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <MaterialIcons name="error-outline" size={FONT_SIZES.xxLarge * 2} color={COLORS.danger} />
+        <Text style={styles.errorText}>{error}</Text>
+        <StyledButton title="Tentar Novamente" onPress={loadAreas} color={COLORS.primary} />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}> {/* Use View para FlatList ocupar a tela */}
+    <View style={styles.container}>
       <Text style={styles.title}>Minhas Áreas de Interesse</Text>
       <Text style={styles.subtitle}>
         Receba alertas personalizados para locais que são importantes para você.
@@ -76,7 +131,7 @@ export default function AreasOfInterestScreen() {
           data={areas}
           renderItem={renderAreaItem}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContentContainer} // Para padding na lista
+          contentContainerStyle={styles.listContentContainer}
         />
       ) : (
         <View style={styles.noAreasContainer}>
@@ -88,7 +143,7 @@ export default function AreasOfInterestScreen() {
       <View style={styles.addAreaButtonContainer}>
         <StyledButton
           title="Adicionar Nova Área"
-          onPress={handleNavigateToAddArea} // Mude para navegação
+          onPress={handleNavigateToAddArea}
           color={COLORS.primary}
         />
       </View>
