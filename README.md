@@ -42,38 +42,43 @@ https://youtu.be/EHQEc9KqihM?si=T48JHxStLW_QN76u
 git clone <URL-do-repositório>
 cd ResgateAlertaGS-1needingtofix
 git checkout v1needingtofix
+```
+
 2. Instale as Dependências do App
-bash
-Copiar
-Editar
+
+```bash
 npm install
-3. Rode a API Java (Spring Boot)
+```
+
+4. Rode a API Java (Spring Boot)
 A API é necessária para o app funcionar corretamente.
 
 Acesse o diretório do projeto da API:
 
-bash
-Copiar
-Editar
+```bash
+
 cd resgate-alerta-api
+```
 Compile o projeto:
 
-bash
-Copiar
-Editar
+```bash
+
 mvn clean install
+```
 Acesse a pasta target:
 
-bash
-Copiar
-Editar
+
+```bash
+
 cd target
+```
 Execute o JAR da aplicação:
 
-bash
-Copiar
-Editar
+
+```bash
+
 java -jar resgate-alerta-api-0.0.1-SNAPSHOT.jar
+```
 4. Configure o IP da API no Frontend
 Abra os seguintes arquivos no app:
 
@@ -83,21 +88,22 @@ src/screens/Profile.jsx
 
 E substitua a constante API_BASE_URL com o IP local da sua máquina (onde a API está rodando):
 
-js
-Copiar
-Editar
+```js
+
 const API_BASE_URL = 'http://SEU_IP_LOCAL:8080';
+```
+
 Exemplo:
 
-js
-Copiar
-Editar
+```js
+
 const API_BASE_URL = 'http://192.168.1.10:8080';
+```
 5. Inicie o App Mobile
 Com a API rodando, volte ao diretório do app React Native:
 
-bash
-Copiar
-Editar
+```bash
+
 cd ResgateAlertaGS-1needingtofix
 npx expo start
+```
