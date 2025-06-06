@@ -1,12 +1,12 @@
 // src/screens/ProfileScreen.js
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ActivityIndicator, Alert, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
-import { profileStyles as styles } from '../styles/profile'; // Importar estilos separados
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import styles from '../styles/profile';
 
-const API_BASE_URL = 'http://192.168.0.10:8080'; // Lembre-se de substituir pelo IP correto!
+const API_BASE_URL = 'http://192.168.0.10:8080';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,20 +21,18 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
-
 
 const ProfileScreen = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [tempEmail, setTempEmail] = useState('');
   const navigation = useNavigation();
 
-  // Dados simulados para conquistas e estatísticas
-  // ATENÇÃO: Para dados reais, você precisaria estender sua API Spring Boot
   const [statsData, setStatsData] = useState({
     alertsSent: 15,
     rescuesParticipated: 5,
@@ -47,46 +45,126 @@ const ProfileScreen = () => {
     { id: '4', name: 'Salvador de Vidas', description: 'Participou de 5 resgates.', icon: '❤️‍🩹' },
   ]);
 
-  // Função para buscar o perfil do usuário (mantida como antes)
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        setLoading(true);
-        setError('');
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const userId = await AsyncStorage.getItem('userId');
+      console.log('ID do usuário recuperado do AsyncStorage:', userId);
 
-        const userId = await AsyncStorage.getItem('userId');
-        console.log('ID do usuário recuperado do AsyncStorage:', userId);
-
-        if (!userId) {
-          setError('ID do usuário não encontrado. Por favor, faça login novamente.');
-          setLoading(false);
-          Alert.alert("Erro", "ID do usuário não encontrado. Por favor, faça login novamente.");
-          navigation.navigate('Login');
-          return;
-        }
-
-        const response = await api.get(`/users/${userId}`);
-        setProfileData(response.data);
-        console.log("Dados do perfil:", response.data);
-
-      } catch (err) {
-        console.error("Erro ao buscar perfil do usuário:", err);
-        if (err.response) {
-          setError(`Erro ao buscar perfil do usuário: ${err.response.status} - ${err.response.data.message || err.response.data}`);
-        } else if (err.request) {
-          setError("Erro de rede. Verifique sua conexão ou o servidor.");
-        } else {
-          setError("Erro desconhecido ao buscar perfil.");
-        }
-      } finally {
-        setLoading(false);
+      if (!userId) {
+        setError('ID do usuário não encontrado. Por favor, faça login novamente.');
+        Alert.alert("Erro", "ID do usuário não encontrado. Por favor, faça login novamente.");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Auth', state: { routes: [{ name: 'Login' }] } }],
+        });
+        return;
       }
-    };
 
-    fetchUserProfile();
-  }, []);
+      const response = await api.get(`/users/${userId}`);
+      const fetchedData = response.data;
+      setProfileData(fetchedData);
+      setTempName(fetchedData.name || '');
+      setTempEmail(fetchedData.email || '');
+      console.log("Dados do perfil:", fetchedData);
 
-  // Função para lidar com a exclusão do usuário (COM A CORREÇÃO DE NAVEGAÇÃO)
+    } catch (err) {
+      console.error("Erro ao buscar perfil do usuário:", err);
+      if (err.response) {
+        setError(`Erro ao buscar perfil do usuário: ${err.response.status} - ${err.response.data.message || 'Erro no servidor'}`);
+      } else if (err.request) {
+        setError("Erro de rede. Verifique sua conexão ou o servidor.");
+      } else {
+        setError("Erro desconhecido ao buscar perfil.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserProfile();
+      return () => {};
+    }, [fetchUserProfile])
+  );
+
+  const handleUpdateUser = async () => {
+    Alert.alert(
+      "Confirmar Alterações",
+      "Tem certeza que deseja salvar as alterações no seu perfil?",
+      [
+        { text: "Cancelar", style: "cancel", onPress: handleCancelEdit },
+        {
+          text: "Salvar",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const userId = await AsyncStorage.getItem('userId');
+              if (!userId) {
+                Alert.alert("Erro", "ID do usuário não encontrado. Faça login novamente.");
+                setLoading(false);
+                return;
+              }
+
+              const updatedData = {
+                name: tempName,
+                email: tempEmail,
+              };
+
+              if (!tempName || tempName.length < 3) {
+                  Alert.alert("Erro de Validação", "O nome deve ter no mínimo 3 caracteres.");
+                  setLoading(false);
+                  return;
+              }
+              if (!tempEmail || !/\S+@\S+\.\S+/.test(tempEmail)) {
+                  Alert.alert("Erro de Validação", "O formato do e-mail é inválido.");
+                  setLoading(false);
+                  return;
+              }
+
+              const response = await api.put(`/users/${userId}`, updatedData);
+              
+              setProfileData(response.data);
+              setIsEditing(false);
+              Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+
+            } catch (err) {
+              console.error("Erro ao atualizar usuário:", err.response || err);
+              let errorMessage = "Ocorreu um erro inesperado ao tentar atualizar o perfil.";
+              if (err.response && err.response.data) {
+                if (err.response.data.message) {
+                    errorMessage = err.response.data.message;
+                } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+                    errorMessage = err.response.data.errors.map(e => e.defaultMessage).join('\n');
+                } else if (typeof err.response.data === 'string') {
+                    errorMessage = err.response.data;
+                } else {
+                    errorMessage = JSON.stringify(err.response.data);
+                }
+              } else if (err.request) {
+                errorMessage = "Erro de Rede: Não foi possível conectar ao servidor para atualizar o perfil.";
+              }
+              Alert.alert("Erro", errorMessage);
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+
+  const handleCancelEdit = () => {
+    if (profileData) {
+      setTempName(profileData.name || '');
+      setTempEmail(profileData.email || '');
+    }
+    setIsEditing(false);
+  };
+
   const handleDeleteUser = async () => {
     Alert.alert(
       "Confirmar Exclusão",
@@ -112,17 +190,15 @@ const ProfileScreen = () => {
               await AsyncStorage.removeItem('token');
               await AsyncStorage.removeItem('userId');
 
-              // --- CORREÇÃO APLICADA AQUI ---
-              // Navega para a tela de Login que está aninhada dentro do navegador 'Auth'
               navigation.reset({
                 index: 0,
                 routes: [
                   {
-                    name: 'Auth', // Nome da tela no RootStack que contém o AuthNavigator
+                    name: 'Auth',
                     state: {
                       routes: [
                         {
-                          name: 'Login', // Nome da tela de Login dentro do AuthNavigator
+                          name: 'Login',
                         },
                       ],
                     },
@@ -148,7 +224,6 @@ const ProfileScreen = () => {
       { cancelable: false }
     );
   };
-
 
   if (loading) {
     return (
@@ -182,21 +257,53 @@ const ProfileScreen = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Meu Perfil</Text>
 
-      {/* Card de Informações do Usuário */}
       <View style={styles.profileCard}>
         <Text style={styles.cardTitle}>Informações Pessoais</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Nome:</Text>
-          <Text style={styles.value}>{profileData.name || 'Não informado'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{profileData.email || 'Não informado'}</Text>
-        </View>
-        {/* Adicione outros campos reais do seu perfil aqui, se houver */}
+        
+        {isEditing ? (
+          <>
+            <Text style={styles.label}>Nome:</Text>
+            <TextInput
+              style={styles.input}
+              value={tempName}
+              onChangeText={setTempName}
+              placeholder="Novo Nome"
+            />
+            <Text style={styles.label}>Email:</Text>
+            <TextInput
+              style={styles.input}
+              value={tempEmail}
+              onChangeText={setTempEmail}
+              placeholder="Novo Email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <View style={styles.buttonGroup}>
+                <TouchableOpacity style={styles.saveButton} onPress={handleUpdateUser}>
+                  <Text style={styles.editButtonText}>Salvar Alterações</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelEdit}>
+                  <Text style={styles.editButtonText}>Cancelar Edição</Text>
+                </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Nome:</Text>
+              <Text style={styles.value}>{profileData.name || 'Não informado'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Email:</Text>
+              <Text style={styles.value}>{profileData.email || 'Não informado'}</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
+              <Text style={styles.editButtonText}>Editar Perfil</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
-      {/* Card de Estatísticas */}
       <View style={styles.profileCard}>
         <Text style={styles.cardTitle}>Estatísticas</Text>
         <View style={styles.statsRow}>
@@ -211,7 +318,6 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      {/* Card de Conquistas */}
       <View style={styles.profileCard}>
         <Text style={styles.cardTitle}>Conquistas</Text>
         <View style={styles.achievementsGrid}>
@@ -225,11 +331,9 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      {/* Botão de Excluir Usuário */}
       <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteUser}>
         <Text style={styles.deleteButtonText}>Excluir Usuário</Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 };
