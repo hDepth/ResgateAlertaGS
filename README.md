@@ -107,3 +107,8 @@ Com a API rodando, volte ao diretório do app React Native:
 cd ResgateAlertaGS-1needingtofix
 npx expo start
 ```
+
+📧 Autor(es) 
+Pedro Henrique Jorge de Paula - Rm 558833 
+Diego Bassalo Canals Silva - Rm 558710 
+Lucas Solimães RM 558506 2TDSR (Aclimação)
